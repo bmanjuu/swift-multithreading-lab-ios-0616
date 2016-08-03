@@ -19,15 +19,41 @@ class ImageViewController : UIViewController, UIScrollViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupViews()
+        
+        activityIndicator = UIActivityIndicatorView(activityIndicatorStyle: .WhiteLarge)
+        activityIndicator.color = UIColor.cyanColor()
+        activityIndicator.center = view.center
+        
+        view.addSubview(activityIndicator)
+    
+        
     }
     
     @IBAction func antiqueButtonTapped(sender: AnyObject) {
-        filterImage { (result) in
-            result ? print("Image filtering complete") : print("Image filtering did not complete")
+        
+        self.activityIndicator.startAnimating()
+        
+        let newOperationQueue = NSOperationQueue()
+        newOperationQueue.qualityOfService = .UserInitiated
+        
+        newOperationQueue.addOperationWithBlock {
+            self.filterImage { (result) in
+                
+                NSOperationQueue.mainQueue().addOperationWithBlock({
+                    result ? print("Image filtering complete") : print("Image filtering did not complete")
+                    self.activityIndicator.stopAnimating()
+                })
+            }
+
         }
+        
+        
+        
     }
     
     func filterImage(completion: (Bool) -> ()) {
+        
+        
         guard let image = imageView?.image, cgimg = image.CGImage else {
             print("imageView doesn't have an image!")
             return
@@ -59,9 +85,12 @@ class ImageViewController : UIViewController, UIScrollViewDelegate {
                 let finalResult = UIGraphicsGetImageFromCurrentImageContext()
                 UIGraphicsEndImageContext()
                 
-                print("Setting final result")
-                self.imageView?.image = finalResult
-                completion(true)
+                NSOperationQueue.mainQueue().addOperationWithBlock({ 
+                    print("Setting final result")
+                    self.imageView?.image = finalResult
+                    completion(true)
+                })
+                
             }
         }
     }
